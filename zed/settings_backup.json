@@ -1,0 +1,115 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+  "features": {
+    "edit_prediction_provider": "zed"
+  },
+  "vim": {
+    "use_system_clipboard": "never",
+    "use_multiline_find": true,
+    "use_smartcase_find": true,
+    "toggle_relative_line_numbers": true,
+    "highlight_on_yank_duration": 50,
+    "custom_digraphs": {
+      "fz": "🧟‍♀️"
+    }
+  },
+  "telemetry": {
+    "metrics": false
+  },
+  "relative_line_numbers": true,
+  "assistant": {
+    "default_model": {
+      "provider": "copilot_chat",
+      "model": "gpt-4o"
+    },
+    "version": "2"
+  },
+  "indent_guides": {
+    "enabled": true,
+    "coloring": "indent_aware"
+  },
+  "centered_layout": {
+    "left_padding": 0.16,
+    "right_padding": 0.16
+  },
+  "code_actions_on_format": {
+    "source.fixAll.biome": true,
+    "source.organizeImports.biome": true
+  },
+  "vim_mode": true,
+  "autosave": "on_window_change",
+  "autosave_on_focus_change": true,
+  "autosave_on_window_change": true,
+  "autosave_on_build": true,
+  "autosave_on_build_delay": 1500,
+  "autosave_on_build_events": [
+    "build",
+    "run",
+    "debug"
+  ],
+  "autosave_on_build_events_delay": 1500,
+  "base_keymap": "JetBrains",
+  "ui_font_size": 16,
+  "buffer_font_size": 16,
+  "theme": {
+    "mode": "system",
+    "light": "Catppuccin Mocha",
+    "dark": "Catppuccin Mocha"
+  },
+  "language_servers": [
+    "!biome",
+    "..."
+  ],
+  "lsp": {
+    "tailwindcss-language-server": {
+      "settings": {
+        "classAttributes": [
+          "class",
+          "className",
+          "ngClass",
+          "styles"
+        ]
+      }
+    },
+    "biome": {
+      "settings": {
+        "require_config_file": true
+      }
+    }
+  },
+  "formatter": {
+    "language_server": {
+      "name": "biome"
+    }
+  },
+  "languages": {
+    "JavaScript": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true
+      }
+    },
+    "TypeScript": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true
+      }
+    },
+    "TSX": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true
+      }
+    }
+  },
+  "eslint": {
+    "enabled": true,
+    "autoFixOnSave": true,
+    "autoFixOnFormat": true,
+    "autoFixOnFormatDelay": 1500
+  }
+}
