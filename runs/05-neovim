@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Install Neovim
+# Usage: Called by run.sh with mac detection
+
+if [[ "$1" == "mac" ]] || [[ "$(uname)" == "Darwin" ]]; then
+    echo "Installing Neovim via Homebrew..."
+    if command -v brew >/dev/null 2>&1; then
+        brew install neovim
+    else
+        echo "Error: Homebrew not found. Please install Homebrew first."
+        exit 1
+    fi
+else
+    echo "Installing Neovim via pacman..."
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm neovim
+    else
+        echo "Error: pacman not found. This script supports Homebrew (macOS) and pacman (Arch Linux)."
+        exit 1
+    fi
+fi
+
+echo "Neovim installation complete!"
+
+# Install LazyVim configuration
+echo "Setting up LazyVim configuration..."
+
+# Backup existing config if it exists
+if [[ -d ~/.config/nvim ]]; then
+    echo "Backing up existing Neovim config to ~/.config/nvim.backup..."
+    mv ~/.config/nvim ~/.config/nvim.backup
+fi
+
+# Clone LazyVim starter
+echo "Cloning LazyVim starter..."
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+
+# Remove .git folder so it can be added to user's own repo
+echo "Removing .git folder from LazyVim config..."
+rm -rf ~/.config/nvim/.git
+
+echo "LazyVim configuration setup complete!"
+echo "Start Neovim with: nvim"
