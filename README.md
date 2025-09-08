@@ -13,6 +13,7 @@ This repository contains my complete dotfiles and configuration setup that allow
 ### Shell Configuration
 - `.zshrc` - Zsh shell configuration
 - `.bashrc` - Bash shell configuration
+- `.p10k.zsh` - Powerlevel10k theme configuration
 
 ### Editor Setup
 - **Zed Editor** (`zed/`)
@@ -51,7 +52,7 @@ The `mac` flag will additionally install AeroSpace window manager configuration.
 
 ## What the Setup Script Does
 
-1. **Shell Configuration**: Copies `.zshrc` and `.bashrc` to your home directory
+1. **Shell Configuration**: Copies `.zshrc`, `.bashrc`, and `.p10k.zsh` to your home directory
 2. **Claude Code Setup**: Runs Claude Code setup scripts and copies configuration files
 3. **Zed Editor**: Copies Zed configuration to `~/.config/zed`
 4. **macOS Only**: Copies AeroSpace configuration to `~/.config/aerospace` (when using `mac` flag)

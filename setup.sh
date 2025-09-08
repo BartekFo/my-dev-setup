@@ -48,9 +48,10 @@ cd "$script_dir"
 
 echo "Starting dotfiles setup..."
 
-# 1. Copy .zshrc and .bashrc to $HOME/
+# 1. Copy .zshrc, .bashrc, and .p10k.zsh to $HOME/
 copy_file ".zshrc" "$HOME/.zshrc"
 copy_file ".bashrc" "$HOME/.bashrc"
+copy_file ".p10k.zsh" "$HOME/.p10k.zsh"
 
 # 2. Run .claude setup and copy non-bash files to $HOME/
 if [[ -f ".claude/setup.sh" ]]; then
