@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Copy dotfiles to home directory
+
+script_dir=$(dirname "$(readlink -f "$0")")
+script_dir=$(dirname "$script_dir")
+
+execute() {
+    echo "Executing: $*"
+    "$@"
+}
+
+copy_file() {
+    local from_file="$1"
+    local to_file="$2"
+    
+    if [[ -f "$from_file" ]]; then
+        echo "Copying $from_file to $to_file"
+        execute cp "$from_file" "$to_file"
+    else
+        echo "Warning: $from_file does not exist"
+    fi
+}
+
+cd "$script_dir"
+
+echo "Setting up dotfiles..."
+
+# Copy .zshrc, .bashrc, and .p10k.zsh to $HOME/
+copy_file ".zshrc" "$HOME/.zshrc"
+copy_file ".bashrc" "$HOME/.bashrc"
+copy_file ".p10k.zsh" "$HOME/.p10k.zsh"
+
+echo "Dotfiles setup complete!"

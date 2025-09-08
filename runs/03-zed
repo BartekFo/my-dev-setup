@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Setup Zed editor configuration
+
+script_dir=$(dirname "$(readlink -f "$0")")
+script_dir=$(dirname "$script_dir")
+
+execute() {
+    echo "Executing: $*"
+    "$@"
+}
+
+copy_dir() {
+    local from_dir="$1"
+    local to_dir="$2"
+    
+    if [[ -d "$from_dir" ]]; then
+        echo "Copying $from_dir to $to_dir"
+        execute rm -rf "$to_dir"
+        execute cp -r "$from_dir" "$to_dir"
+    else
+        echo "Warning: $from_dir does not exist"
+    fi
+}
+
+cd "$script_dir"
+
+echo "Setting up Zed configuration..."
+
+# Copy zed folder to $HOME/.config/
+copy_dir "zed" "$HOME/.config/zed"
+
+echo "Zed setup complete!"
