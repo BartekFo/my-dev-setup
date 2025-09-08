@@ -1,0 +1,2 @@
+- Dont use inline style={{}} create css modules for components that need them
+- Always check component on frontend before using components directly from library like mantine

@@ -6,8 +6,8 @@ script_dir=$(dirname "$(readlink -f "$0")")
 script_dir=$(dirname "$script_dir")
 
 execute() {
-    echo "Executing: $*"
-    "$@"
+  echo "Executing: $*"
+  "$@"
 }
 
 cd "$script_dir"
@@ -15,21 +15,21 @@ cd "$script_dir"
 echo "Setting up Claude configuration..."
 
 # Run .claude setup script
-if [[ -f ".claude/setup.sh" ]]; then
-    echo "Running .claude setup script..."
-    pushd ".claude"
-    execute ./setup.sh
-    popd
+if [[ -f ".claude/setup-mcp.sh" ]]; then
+  echo "Running .claude setup mcp script..."
+  pushd ".claude"
+  execute ./setup-mcp.sh
+  popd
 fi
 
 # Copy .claude files (excluding bash scripts) to $HOME/
 echo "Copying .claude files to $HOME/.claude"
 execute mkdir -p "$HOME/.claude"
 for file in .claude/*; do
-    if [[ -f "$file" && ! "$file" =~ \.sh$ ]]; then
-        filename=$(basename "$file")
-        execute cp "$file" "$HOME/.claude/$filename"
-    fi
+  if [[ -f "$file" && ! "$file" =~ \.sh$ ]]; then
+    filename=$(basename "$file")
+    execute cp "$file" "$HOME/.claude/$filename"
+  fi
 done
 
 echo "Claude setup complete!"
