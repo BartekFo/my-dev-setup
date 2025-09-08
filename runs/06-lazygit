@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# Install LazyGit
+# Usage: Called by run.sh with mac detection
+
+if [[ "$1" == "mac" ]] || [[ "$(uname)" == "Darwin" ]]; then
+    echo "Installing LazyGit via Homebrew..."
+    if command -v brew >/dev/null 2>&1; then
+        brew install lazygit
+    else
+        echo "Error: Homebrew not found. Please install Homebrew first."
+        exit 1
+    fi
+else
+    echo "Installing LazyGit via pacman..."
+    if command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm lazygit
+    else
+        echo "Error: pacman not found. This script supports Homebrew (macOS) and pacman (Arch Linux)."
+        exit 1
+    fi
+fi
+
+echo "LazyGit installation complete!"
+echo "Start LazyGit with: lazygit"
