@@ -22,6 +22,12 @@ This repository contains my complete dotfiles and configuration setup that allow
   - Custom keymaps
   - Theme configurations
 
+### Terminal Configuration
+- **Ghostty** (`ghostty/`) - Modern terminal emulator configuration
+  - Custom font settings (MasloLGS Nerd Font Mono)
+  - TokyoNight Night theme with custom color palette
+  - Optimized mouse scrolling and keybindings
+
 ### macOS Tools
 - **AeroSpace** (`macbook/aerospace/`) - Tiling window manager configuration
 
@@ -73,6 +79,9 @@ If you want to run only specific components, you can use the modular run system 
 # Run only Zed setup
 ./run.sh zed
 
+# Run only Ghostty setup
+./run.sh ghostty
+
 # Run only macOS AeroSpace setup
 ./run.sh aerospace
 
@@ -91,19 +100,21 @@ If you want to run only specific components, you can use the modular run system 
 The `setup.sh` script is the main entry point that runs the core setup components:
 
 - **Shell Configuration**: Copies `.zshrc`, `.bashrc`, and `.p10k.zsh` to your home directory
-- **Claude Code Setup**: Runs Claude Code setup scripts and copies configuration files  
+- **Claude Code Setup**: Runs Claude Code setup scripts and copies configuration files
 - **Zed Editor**: Copies Zed configuration to `~/.config/zed`
+- **Ghostty Terminal**: Copies Ghostty configuration to `~/.config/ghostty`
 - **Neovim**: Installs Neovim using the dedicated installation script
 - **macOS Only**: Copies AeroSpace configuration to `~/.config/aerospace` (when using `mac` flag)
 
 Under the hood, `setup.sh` uses a modular system with individual scripts in the `runs/` directory:
 
 1. **01-dotfiles**: Shell configuration setup
-2. **02-claude**: Claude Code setup  
+2. **02-claude**: Claude Code setup
 3. **03-zed**: Zed Editor configuration
 4. **04-aerospace-mac**: AeroSpace window manager (macOS only)
 5. **05-neovim**: Neovim installation
 6. **06-lazygit**: Lazygit installation (available via direct run.sh usage)
+7. **07-ghostty**: Ghostty terminal emulator configuration
 
 The `run.sh` script orchestrates these individual components and can be used directly for selective setup or advanced filtering.
 
@@ -121,6 +132,9 @@ If you prefer to set up components individually, you can run the individual scri
 # Zed Editor setup
 ./runs/03-zed
 
+# Ghostty terminal setup
+./runs/07-ghostty
+
 # AeroSpace setup (macOS)
 ./runs/04-aerospace-mac
 
@@ -136,6 +150,11 @@ Or use the traditional manual approach:
 ### Zed Editor
 ```bash
 cp -r zed ~/.config/zed
+```
+
+### Ghostty Terminal
+```bash
+cp -r ghostty ~/.config/ghostty
 ```
 
 ### AeroSpace (macOS)

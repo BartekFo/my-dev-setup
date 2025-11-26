@@ -26,8 +26,9 @@ echo "Starting dotfiles setup using script runner..."
 
 # Run core setup scripts
 ./run.sh $dry_run "01-dotfiles"
-./run.sh $dry_run "02-claude" 
+./run.sh $dry_run "02-claude"
 ./run.sh $dry_run "03-zed"
+./run.sh $dry_run "07-ghostty"
 ./run.sh $dry_run "05-neovim"
 
 # Run mac-specific setup if requested

@@ -5,7 +5,7 @@ filter=""
 dry="0"
 
 cd $script_dir
-scripts=$(find runs -maxdepth 1 -mindepth 1 -perm +111 -type f)
+scripts=$(find runs -maxdepth 1 -mindepth 1 -perm /111 -type f)
 
 while [[ $# > 0 ]]; do
     if [[ "$1" == "--dry" ]]; then
