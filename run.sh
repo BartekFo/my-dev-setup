@@ -5,41 +5,42 @@ filter=""
 dry="0"
 
 cd $script_dir
-scripts=$(find runs -maxdepth 1 -mindepth 1 -perm /111 -type f)
+scripts=$(find runs -maxdepth 1 -mindepth 1 -type f -perm -100)
 
 while [[ $# > 0 ]]; do
-    if [[ "$1" == "--dry" ]]; then
-        dry="1"
-    else
-        filter="$1"
-    fi
-    shift
+  if [[ "$1" == "--dry" ]]; then
+    dry="1"
+  else
+    filter="$1"
+  fi
+  shift
 done
 
 log() {
-    if [[ $dry == "1" ]]; then
-        echo "[DRY_RUN]: $@"
-    else
-        echo "$@"
-    fi
+  if [[ $dry == "1" ]]; then
+    echo "[DRY_RUN]: $@"
+  else
+    echo "$@"
+  fi
 }
 
 execute() {
-    log "execute: $@"
-    if [[ $dry == "1" ]]; then
-        return
-    fi
+  log "execute: $@"
+  if [[ $dry == "1" ]]; then
+    return
+  fi
 
-    "$@"
+  "$@"
 }
 
 log "run: filter=$filter"
 
 for script in $scripts; do
-    if echo "$script" | grep -qv "$filter"; then
-        log "filtered: $filter -- $script"
-        continue
-    fi
-    log "running script: $script"
-    execute ./$script
+  if echo "$script" | grep -qv "$filter"; then
+    log "filtered: $filter -- $script"
+    continue
+  fi
+  log "running script: $script"
+  execute ./$script
 done
+
