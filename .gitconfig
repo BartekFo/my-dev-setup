@@ -1,0 +1,73 @@
+[user]
+	name = Bartosz Fórmanowski
+	email = bartosz.f@masterborn.com
+	signingkey = 7BDA9EFEF6294489
+
+[column]
+	ui = auto
+
+[branch]
+	sort = -committerdate
+
+[tag]
+	sort = version:refname
+	gpgsign = true
+
+[init]
+	defaultBranch = main
+
+[diff]
+	algorithm = histogram
+	colorMoved = plain
+	renames = true
+
+[push]
+	default = simple
+	autoSetupRemote = true
+	followTags = true
+
+[fetch]
+	prune = true
+	pruneTags = true
+
+[pull]
+	rebase = interactive
+
+[color]
+	ui = auto
+
+# why the hell not?
+
+[help]
+	autocorrect = prompt
+
+[commit]
+	verbose = true
+	gpgsign = true
+
+[rerere]
+	enabled = true
+	autoupdate = true
+
+[core]
+	editor = nvim
+	autocrlf = input
+	excludesfile = ~/.gitignore_global
+
+[rebase]
+	autoSquash = true
+	autoStash = true
+	updateRefs = true
+
+[merge]
+	conflictstyle = zdiff3
+
+[alias]
+	st = status
+	co = checkout
+	br = branch
+	ci = commit
+	last = log -1 HEAD
+	unstage = reset HEAD --
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+
