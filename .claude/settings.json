@@ -1,4 +1,9 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Edit",
@@ -6,14 +11,35 @@
       "Write",
       "Bash(git add:*)",
       "Bash(git commit:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(gh pr create:*)",
       "Bash(pnpm:*)",
-      "Bash(bun:*)"
+      "Bash(bun:*)",
+      "Bash(grep:*)",
+      "Bash(tree:*)",
+      "mcp__serena__find_file",
+      "mcp__serena__search_for_pattern",
+      "mcp__serena__get_symbols_overview",
+      "mcp__serena__list_dir",
+      "mcp__serena__find_symbol",
+      "mcp__serena__read_memory",
+      "mcp__figma__get_design_context",
+      "mcp__figma__get_screenshot",
+      "mcp__serena__think_about_collected_information"
     ],
     "deny": [],
     "ask": []
   },
+  "model": "sonnet",
   "statusLine": {
     "type": "command",
-    "command": "ccusage statusline"
-  }
+    "command": "./statusline.sh"
+  },
+  "enabledPlugins": {
+    "context7@claude-plugins-official": true
+  },
+  "alwaysThinkingEnabled": true,
+  "effortLevel": "medium"
 }
