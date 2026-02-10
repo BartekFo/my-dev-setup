@@ -38,7 +38,9 @@
     "command": "./statusline.sh"
   },
   "enabledPlugins": {
-    "context7@claude-plugins-official": true
+    "context7@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true
   },
   "alwaysThinkingEnabled": true,
   "effortLevel": "medium"

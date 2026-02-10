@@ -1,0 +1,26 @@
+{
+  "claude-plugins-official": {
+    "source": {
+      "source": "github",
+      "repo": "anthropics/claude-plugins-official"
+    },
+    "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/claude-plugins-official",
+    "lastUpdated": "2026-02-10T12:16:26.764Z"
+  },
+  "claude-code-plugins": {
+    "source": {
+      "source": "github",
+      "repo": "anthropics/claude-code"
+    },
+    "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/claude-code-plugins",
+    "lastUpdated": "2026-02-10T12:50:29.591Z"
+  },
+  "ast-grep-marketplace": {
+    "source": {
+      "source": "github",
+      "repo": "ast-grep/claude-skill"
+    },
+    "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/ast-grep-marketplace",
+    "lastUpdated": "2025-12-22T08:39:29.170Z"
+  }
+}
