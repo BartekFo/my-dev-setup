@@ -5,7 +5,7 @@
       "repo": "anthropics/claude-plugins-official"
     },
     "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/claude-plugins-official",
-    "lastUpdated": "2026-02-10T12:16:26.764Z"
+    "lastUpdated": "2026-07-08T09:04:36.130Z"
   },
   "claude-code-plugins": {
     "source": {
@@ -13,7 +13,7 @@
       "repo": "anthropics/claude-code"
     },
     "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/claude-code-plugins",
-    "lastUpdated": "2026-02-10T12:50:29.591Z"
+    "lastUpdated": "2026-07-08T09:04:35.954Z"
   },
   "ast-grep-marketplace": {
     "source": {
@@ -22,5 +22,13 @@
     },
     "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/ast-grep-marketplace",
     "lastUpdated": "2025-12-22T08:39:29.170Z"
+  },
+  "caveman": {
+    "source": {
+      "source": "github",
+      "repo": "JuliusBrussee/caveman"
+    },
+    "installLocation": "/Users/bartosz.f/.claude/plugins/marketplaces/caveman",
+    "lastUpdated": "2026-04-14T09:43:48.020Z"
   }
 }

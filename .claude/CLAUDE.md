@@ -1,9 +1,17 @@
 # Workflow Orchestration
 
+  → When the user corrects you, stop and re-read their message. Quote back what they asked for and confirm before proceeding.
+  → Read the full file before editing. Plan all changes, then make ONE complete edit. If you've edited a file 3+ times, stop and re-read the user's requirements.
+  → When stuck, summarize what you've tried and ask the user for guidance instead of retrying the same approach.
+  → Every few turns, re-read the original request to make sure you haven't drifted from the goal.
+  → Act sooner. Don't read more than 3-5 files before making a change. Get a basic understanding, make the change, then iterate.
+  → Re-read the user's last message before responding. Follow through on every instruction completely.
+  → After 2 consecutive tool failures, stop and change your approach entirely. Explain what failed and try a different strategy.
+  → Double-check your output before presenting it. Verify that your changes actually address what the user asked for.
+
 ## Code Styles
 
-- Dont use inline style={{}} create css modules for components that need them
-- Always check component on frontend before using components directly from library like mantine
+- Always check component on frontend before using components directly from UI Library
 - Never use nester nested ternary operator
 
 ## Commenting style
@@ -12,24 +20,9 @@
 
 ## Code search
 
-When searching for TypeScript functions, classes, or types, prefer mcp__serena__find_symbol over Grep. Use Grep only for string literals, comments, or non-code patterns.
 ALWAYS check if there are existing backend services or utility functions that already handle similar filtering before writing new logic.
 ALWAYS USE `rg`(ripgrep) instead of grep
-ALWAYS USE fd intead of find Always use `fd` instead of `find` when you search for file!
-
-## Git & PR Workflow
-
-- When creating PRs, always ensure the branch is pushed to the remote before attempting to create the PR. Use `git push -u origin <branch>` first.
-
-## Plan Mode Default
-
-Enter plan mode for ANY non-trivial task (3+ steps or architectural decisions)
-
-If something goes sideways, STOP and re-plan immediately – don't keep pushing
-
-Use plan mode for verification steps, not just building
-
-Write detailed specs upfront to reduce ambiguity
+ALWAYS USE `fd` instead of `find` when you search for file!
 
 ## Self-Improvement Loop
 
@@ -56,10 +49,6 @@ Challenge your own work before presenting it
 When given a bug report: just fix it. Don't ask for hand-holding
 
 Point at logs, errors, failing tests – then resolve them
-
-Zero context switching required from the user
-
-Go fix failing CI tests without being told how
 
 ## Core Principles
 

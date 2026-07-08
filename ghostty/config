@@ -44,6 +44,7 @@
 
 # Slowdown mouse scrolling
 font-family = MasloLGS Nerd Font Mono
+font-size = 16
 mouse-scroll-multiplier = 0.95
 keybind = shift+enter=text:\x1b\r
 confirm-close-surface = false

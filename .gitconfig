@@ -1,7 +1,7 @@
 [user]
 	name = Bartosz Fórmanowski
 	email = bartosz.f@masterborn.com
-	signingkey = 7BDA9EFEF6294489
+	signingkey = B87E489CC92AECC5
 
 [column]
 	ui = auto
@@ -71,3 +71,8 @@
 	unstage = reset HEAD --
 	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
 
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

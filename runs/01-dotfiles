@@ -26,9 +26,12 @@ cd "$script_dir"
 
 echo "Setting up dotfiles..."
 
-# Copy .zshrc, .bashrc, and .p10k.zsh to $HOME/
+# Copy shell dotfiles to $HOME/
 copy_file ".zshrc" "$HOME/.zshrc"
 copy_file ".bashrc" "$HOME/.bashrc"
-copy_file ".p10k.zsh" "$HOME/.p10k.zsh"
+
+# Copy Starship prompt config
+execute mkdir -p "$HOME/.config"
+copy_file "starship.toml" "$HOME/.config/starship.toml"
 
 echo "Dotfiles setup complete!"

@@ -13,7 +13,7 @@ after-login-command = []
 # 'after-startup-command' is run after 'after-login-command'
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
 after-startup-command = [
-  'exec-and-forget borders active_color=0xffe1e3e4 inactive_color=0xff494d64 width=5.0'
+  'exec-and-forget borders active_color=0xffe1e3e4 inactive_color=0xff494d64 width=5.0',
 ]
 
 # Start AeroSpace at login
@@ -55,11 +55,11 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 #                 See: https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
 [gaps]
 inner.horizontal = 10
-inner.vertical =   10
-outer.left =       10
-outer.bottom =     10
-outer.top =        10
-outer.right =      10
+inner.vertical = 10
+outer.left = [{ monitor."PL4594DQ" = 720 }, 10]
+outer.bottom = 10
+outer.top = 10
+outer.right = [{ monitor."PL4594DQ" = 720 }, 10]
 
 # 'main' binding mode declaration
 # See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
@@ -111,17 +111,21 @@ alt-2 = 'workspace 2'
 alt-3 = 'workspace 3'
 alt-4 = 'workspace 4'
 alt-5 = 'workspace 5'
+alt-v = 'workspace v'
 
-alt-w = 'close'
+alt-w = 'close --quit-if-last-window'
 # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
 alt-shift-1 = 'move-node-to-workspace 1'
 alt-shift-2 = 'move-node-to-workspace 2'
 alt-shift-3 = 'move-node-to-workspace 3'
 alt-shift-4 = 'move-node-to-workspace 4'
 alt-shift-5 = 'move-node-to-workspace 5'
+alt-shift-v = 'move-node-to-workspace v'
 
-
-alt-shift-f = 'fullscreen'
+alt-shift-f = 'fullscreen --no-outer-gaps'
+alt-shift-space = 'layout floating tiling'
+alt-shift-b = 'balance-sizes'
+alt-shift-u = 'exec-and-forget /Users/bartosz.f/.config/aerospace/scripts/ultrawide-gaps.sh toggle'
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#workspace-back-and-forth
 alt-tab = 'workspace-back-and-forth'
@@ -135,8 +139,8 @@ alt-shift-semicolon = 'mode service'
 alt-enter = 'exec-and-forget open -n /Applications/Ghostty.app'
 alt-slash = 'exec-and-forget open -n /Applications/1Password.app'
 alt-b = 'exec-and-forget open -n /Applications/Zen.app'
-alt-e = 'exec-and-forget open -n /Applications/Spark Desktop.app'
-alt-c = 'exec-and-forget open -n /Applications/Notion Calendar.app/'
+alt-m = 'exec-and-forget open -n /Applications/Spark\ Desktop.app'
+alt-k = 'exec-and-forget open -n /Applications/Notion\ Calendar.app'
 
 
 # 'service' binding mode declaration.
@@ -145,7 +149,10 @@ alt-c = 'exec-and-forget open -n /Applications/Notion Calendar.app/'
 esc = ['reload-config', 'mode main']
 r = ['flatten-workspace-tree', 'mode main'] # reset layout
 #s = ['layout sticky tiling', 'mode main'] # sticky is not yet supported https://github.com/nikitabobko/AeroSpace/issues/2
-f = ['layout floating tiling', 'mode main'] # Toggle between floating and tiling layout
+f = [
+  'layout floating tiling',
+  'mode main',
+] # Toggle between floating and tiling layout
 backspace = ['close-all-windows-but-current', 'mode main']
 
 alt-shift-h = ['join-with left', 'mode main']
@@ -155,14 +162,13 @@ alt-shift-l = ['join-with right', 'mode main']
 
 
 [[on-window-detected]]
+if.app-id = 'com.mitchellh.ghostty'
+run = 'exec-and-forget /Users/bartosz.f/.config/aerospace/scripts/ghostty-layout.sh'
+
+[[on-window-detected]]
 if.app-name-regex-substring = 'finder'
 run = 'layout floating'
 
 [[on-window-detected]]
 if.app-name-regex-substring = 'Self-Service'
 run = 'layout floating'
-
-[workspace-to-monitor-force-assignment]
-'1' = 'S27R65'
-'2' = 'Built-in Retina Display'
-'3' = 'BenQ GW2265'

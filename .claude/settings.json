@@ -1,4 +1,9 @@
 {
+  "respectGitignore": true,
+  "cleanupPeriodDays": 20,
+  "env": {
+    "CLAUDE_CODE_DISABLE_1M_CONTEXT": "1"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
@@ -19,6 +24,10 @@
       "Bash(bun:*)",
       "Bash(grep:*)",
       "Bash(tree:*)",
+      "Bash(fd:*)",
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(rm /tmp/pr-description.md)",
       "mcp__serena__find_file",
       "mcp__serena__search_for_pattern",
       "mcp__serena__get_symbols_overview",
@@ -29,19 +38,92 @@
       "mcp__figma__get_screenshot",
       "mcp__serena__think_about_collected_information"
     ],
-    "deny": [],
-    "ask": []
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./config/credentials.json)",
+      "Read(./secrets/**)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.kube/config)",
+      "Read(~/.ssh/**)"
+    ],
+    "ask": [
+      "Bash(gh pr merge:*)",
+      "Bash(git clean:*)",
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(rm:*)",
+      "Bash(sudo:*)",
+      "Bash(terraform apply:*)",
+      "Bash(terraform destroy:*)"
+    ],
+    "defaultMode": "auto"
   },
-  "model": "sonnet",
+  "model": "claude-fable-5[1m]",
+  "hooks": {
+    "PostToolUseFailure": [
+      {
+        "matcher": "Read|Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/nono-hook.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/bartosz.f/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
   "statusLine": {
     "type": "command",
-    "command": "./statusline.sh"
+    "command": "/Users/bartosz.f/.claude/statusline.sh"
   },
   "enabledPlugins": {
+    "caveman@caveman": true,
+    "code-simplifier@claude-plugins-official": true,
+    "commit-commands@claude-plugins-official": true,
     "context7@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "commit-commands@claude-plugins-official": true
+    "feature-dev@claude-plugins-official": true,
+    "figma@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true
   },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
+  "viewMode": "verbose",
+  "language": "Polish",
+  "spinnerTipsEnabled": false,
   "alwaysThinkingEnabled": true,
-  "effortLevel": "medium"
+  "effortLevel": "xhigh",
+  "awaySummaryEnabled": true,
+  "autoUpdatesChannel": "latest",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark",
+  "editorMode": "normal",
+  "preferredNotifChannel": "auto",
+  "showTurnDuration": true,
+  "skipAutoPermissionPrompt": true,
+  "version": "1.0",
+  "vision": "1"
 }

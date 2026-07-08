@@ -13,7 +13,7 @@ This repository contains my complete dotfiles and configuration setup that allow
 ### Shell Configuration
 - `.zshrc` - Zsh shell configuration
 - `.bashrc` - Bash shell configuration
-- `.p10k.zsh` - Powerlevel10k theme configuration
+- `starship.toml` - Starship prompt configuration
 
 ### Editor Setup
 - **Zed Editor** (`zed/`)
@@ -66,6 +66,17 @@ You can also use dry-run mode to preview what would be executed:
 ./setup.sh mac --dry
 ```
 
+### Validate Current Machine State
+
+Check whether the tracked configs in this repo match what is currently installed on this machine:
+```bash
+./validate.sh
+./validate.sh --diff       # show diffs for changed files
+./validate.sh --all        # print every mismatch
+```
+
+The validator compares dotfiles, Starship prompt config, Claude/agent config, Zed, Ghostty, and macOS AeroSpace config against their expected `$HOME` locations. It ignores untracked runtime caches/history.
+
 ### Selective Setup
 If you want to run only specific components, you can use the modular run system directly:
 
@@ -99,7 +110,7 @@ If you want to run only specific components, you can use the modular run system 
 
 The `setup.sh` script is the main entry point that runs the core setup components:
 
-- **Shell Configuration**: Copies `.zshrc`, `.bashrc`, and `.p10k.zsh` to your home directory
+- **Shell Configuration**: Copies `.zshrc` and `.bashrc` to your home directory, and `starship.toml` to `~/.config/starship.toml`
 - **Claude Code Setup**: Runs Claude Code setup scripts and copies configuration files
 - **Zed Editor**: Copies Zed configuration to `~/.config/zed`
 - **Ghostty Terminal**: Copies Ghostty configuration to `~/.config/ghostty`
