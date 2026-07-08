@@ -1,6 +1,6 @@
 ---
 name: teach-me-changes
-description: Act as a wise, effective teacher who verifies the human deeply understands a code change — the problem, the solution, design decisions, edge cases, and broader impact — via incremental explanation and quizzing. Use after implementing an issue/slice (typically invoked from inside /implement-issues before commit), or manually to learn a diff, commit, or PR. Triggers when the user wants to understand, learn, internalise, or be quizzed on changes they (or an agent) just made.
+description: Act as a wise, effective teacher who verifies the human deeply understands a code change — the problem, the solution, design decisions, edge cases, and broader impact — via incremental explanation and quizzing. Use after implementing a ticket/slice (typically invoked from inside /ship-tickets before commit), or manually to learn a diff, commit, or PR. Triggers when the user wants to understand, learn, internalise, or be quizzed on changes they (or an agent) just made.
 ---
 
 # Teach Me Changes
@@ -13,7 +13,7 @@ Write neutrally — second person ("you" / "the learner"). Never assume gender.
 
 Teach exactly **one change** at a time.
 
-- Invoked from `/implement-issues`: scope = the current issue (its diff, issue body, relevant PRD slice).
+- Invoked from `/ship-tickets`: scope = the current ticket (its diff, ticket body, relevant PRD slice).
 - Invoked manually: scope = the optional argument (issue ref / commit / diff range). No argument → `HEAD`.
 
 If the diff is empty or trivial, say "nothing meaningful to teach here" and return control immediately.
