@@ -114,9 +114,11 @@ The teaching session does not commit anything itself — control returns here fo
 
 #### 3f. Commit
 
-Use ticket title + id as commit subject. Example:
+Subject = ticket title + id. Body = short description of what changed and why — drawn from the actual diff and the ticket, not the subagent's report. Example:
 ```
 feat: {title} ({id})
+
+{2-4 sentences: what changed, why, anything a future reader needs}
 ```
 Match repo's existing commit style — check `git log` first. Stage only files the subagent touched.
 
