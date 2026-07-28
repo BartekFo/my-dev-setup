@@ -23,7 +23,6 @@ zd() {
 n() { if [[ "$#" -eq 0 ]]; then nvim .; else nvim "$1"; fi; }
 alias ..="cd .."
 alias t3="bunx t3"
-alias diff="hunk diff"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
 # fnm
