@@ -59,25 +59,32 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 Send a single message with two `Agent` tool calls. Use the `general-purpose` subagent for both.
 
+Their reports are machine-facing and injected verbatim into the parent context. Require evidence-dense findings only: no preamble, diff summary, praise, or general commentary. Use this shared severity vocabulary:
+
+- 🔴 blocking — documented rule breach or missing/wrong required behaviour
+- 🟡 non-blocking — partial behaviour, scope creep, or judgement-call smell
+- 🔵 minor — actionable local issue with low impact
+- ❓ uncertain — cannot verify without a decision or missing evidence
+
 **Standards sub-agent prompt** — include:
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full — the sub-agent has no other access to it.
-- The brief: "Report — per file/hunk where relevant — (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls — documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
+- The brief: "Find (a) every documented-standard violation and cite its source; and (b) baseline smells, always labelled as judgement calls. A repo standard overrides the baseline. Skip anything tooling enforces. Return only actionable findings, sorted file then line, in this exact form: `path:line: <emoji> hard|judgement|minor|uncertain: <problem>. rule: <source or smell>. fix: <action>.` Use `No issues.` when empty. Otherwise end with `totals: N🔴 N🟡 N🔵 N❓`. Under 300 words."
 
 **Spec sub-agent prompt** — include:
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
+- The brief: "Find (a) missing or partial requirements; (b) scope creep; and (c) implemented requirements whose behaviour is wrong. Return only actionable findings, sorted code file then line, in this exact form: `path:line: <emoji> missing|partial|scope|wrong|uncertain: <problem>. spec: <short requirement + source>. fix: <action>.` For a missing requirement with no code location, start with `spec:<requirement-id>:`. Use `No issues.` when empty. Otherwise end with `totals: N🔴 N🟡 N🔵 N❓`. Under 300 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 
 ### 5. Aggregate
 
-Present the two reports under `## Standards` and `## Spec` headings, verbatim or lightly cleaned. Do **not** merge or rerank findings — the two axes are deliberately separate (see _Why two axes_).
+Present the two compact reports under `## Standards` and `## Spec` headings verbatim. Do **not** expand, merge, or rerank findings — the two axes are deliberately separate (see _Why two axes_).
 
-End with a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes — that's the reranking the separation exists to prevent.
+End with one line that copies each axis total and worst severity without repeating finding text. Don't pick a single winner across axes — that's the reranking the separation exists to prevent.
 
 ## Why two axes
 

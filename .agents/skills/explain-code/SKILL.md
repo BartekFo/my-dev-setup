@@ -1,7 +1,6 @@
 ---
 name: explain-code
 description: Explain code as a scannable blog post
-disable-model-invocation: true
 ---
 
 # Explain Code
@@ -27,7 +26,14 @@ One plain-English line naming the topic.
 
 Write 2-3 short sentences that give the gist to someone who did not write the code.
 
-Optional: include one small `mermaid` block only when the main story is easier to grasp as flow or handoff.
+Optional: include one small fenced `text` diagram when the main story is easier to grasp as a flow or handoff.
+
+Keep diagrams renderer-portable:
+
+- Prefer compact ASCII diagrams that remain readable as plain text.
+- Keep them under 80 columns and about 12 lines.
+- Use arrows, indentation, and labels to show flow.
+- Do not use Mermaid unless the user explicitly requests it.
 
 After the `📋 TLDR`, add a horizontal rule: `---`.
 

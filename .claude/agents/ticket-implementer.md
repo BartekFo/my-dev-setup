@@ -51,14 +51,32 @@ Edit hygiene (all modes):
 - If tests fail because of your change, fix them. If tests fail unrelated to your change, note it in the report — do not silently bypass.
 - If the ticket describes UI behavior and you cannot test it programmatically, say so explicitly.
 
-**5. Report back.** Final message MUST include:
-- **Mode** — TDD / Safety-net / No-test + one-line reason.
-- **Seams tested** (TDD mode) — the public boundaries the tests exercise.
-- **Files changed** — paths only, grouped by add/modify/delete. Separate test files from production files.
-- **Approach** — 2-4 sentences on what you did and why. If TDD: list each red→green cycle (one bullet per behavior).
-- **Lint/typecheck/test results** — exact command run + pass/fail. Quote failures.
-- **Acceptance criteria** — bullet each criterion with ✓ / ✗ / partial + one-line reason. For TDD tickets, link each criterion to the test that covers it.
-- **Deviations or open questions** — anything the reviewer should know before approving.
+**5. Report back with the compact protocol.** Your final message is machine-facing and is injected verbatim into the orchestrator's context. Preserve evidence; remove narrative. Use this exact shape and no prose outside it:
+
+```text
+done.
+mode: tdd|safety-net|no-test — <reason, ≤12 words>
+approach: <what changed and why, ≤35 words>
+seams:
+- `<public boundary>` — <behaviour exercised>
+changes:
+- A|M|D prod|test `<path>` — <change, ≤12 words>
+cycles:
+- red `<test>` → green `<implementation>`
+checks:
+- pass|fail|skip `<exact command>` — <result or failure, ≤20 words>
+criteria:
+- ✓|~|✗ <short criterion> — <test or path:line evidence>
+notes:
+- blocker|deviation|open: <fact, ≤20 words>
+totals: <prod N> <tests N> <checks N pass/N fail/N skip>
+```
+
+Rules:
+- First token is `done.`, `blocked.`, `ambiguous.`, or `regressed.`; use the latter three as terminal status when work cannot safely finish.
+- Use `seams: n/a`, `cycles: n/a`, or `notes: none` when a section does not apply.
+- Keep every changed path, exact verification command, criterion result, and actionable failure. Compress wording, never evidence.
+- Quote only the shortest useful failure line. Do not restate the ticket or explain routine steps.
 
 ## Hard rules
 

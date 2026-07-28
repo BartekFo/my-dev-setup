@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Serial, human-gated shipping of a ticket batch. The main thread **orchestrates only** — never writes code itself. Per ticket, one at a time (never parallel): implement (Sonnet subagent driving the `implement` skill) → code review (`code-review` skill, its axis sub-agents on Sonnet) + auto-fix → human gate → commit. On approve, optionally work through the slice with `teach-me-changes` first. After the batch, a Sonnet subagent writes the walkthrough via the `explain-code` skill.
 
+Machine-facing subagent reports use compact, Cavecrew-inspired protocols to protect the main context. Compression applies to wording, never evidence: retain changed paths, exact verification commands, acceptance-criterion results, finding locations, severity, sources, and fixes. Human-facing gates remain normal prose.
+
 ## Inputs
 
 User invokes: `/ship-tickets <path>`
@@ -29,13 +31,15 @@ Read every ticket. For each capture: `id` (filename or tracker id), `title`, `bo
 
 Topological sort using `Blocked by`. Detect cycles → stop, report to user.
 
-Show user the planned order as numbered list (title + id only). Wait for user "go" / approval of order. User may reorder or skip.
+Show user the planned order as a numbered list (title + id only), then continue immediately with the first ticket. The order is informational: do not wait for "go" or approval. The user may still interrupt to reorder or skip tickets.
+
+The first mandatory pause is the code-review gate in step 3c. Do not add a confirmation gate after loading or sorting tickets.
 
 ### 3. Loop per ticket
 
 Before starting, record the run's baseline commit: `git rev-parse HEAD` → `BASE_SHA`. Step 5 uses it to scope the final walkthrough.
 
-For each ticket in approved order:
+For each ticket in dependency order:
 
 #### 3a. Implement (subagent)
 
@@ -48,7 +52,7 @@ Use `Agent` tool. Required params:
 Even a one-line ticket goes through the subagent — orchestrate only.
 
 <subagent-prompt-template>
-Implement this ticket. Follow your standing rules: drive the work through the `implement` skill, no commit, no self-review, run lint/typecheck/tests, report back in the standard format.
+Implement this ticket. Follow your standing rules: drive the work through the `implement` skill, no commit, no self-review, run lint/typecheck/tests, and return only your compact standard report.
 
 Ticket id: {id}
 Title: {title}
@@ -80,7 +84,7 @@ Then:
 
 1. Collect findings from both axes.
    - **No findings** → skip straight to 3c.
-   - **Findings exist** → re-dispatch the `ticket-implementer` subagent (same params as 3a) with both axes' findings in the feedback slot of the prompt template. Instruct it to apply the fixes (Spec gaps and hard Standards violations first; baseline smells are judgement calls), no commit, re-run lint/typecheck/tests.
+   - **Findings exist** → re-dispatch the `ticket-implementer` subagent (same params as 3a) with both axes' finding lines in the feedback slot of the prompt template; omit `No issues.` and `totals:` lines. Instruct it to apply the fixes (Spec gaps and hard Standards violations first; baseline smells are judgement calls), no commit, re-run lint/typecheck/tests.
 2. One review + one fix pass is enough. Do not loop the review — the human gate in 3c catches anything left. (`reject` in 3d returns here, so re-reviews happen on demand.)
 3. Fixes are orchestrate-only too — the subagent applies them.
 
@@ -88,7 +92,7 @@ Then:
 
 After review + fixes:
 - Run `git status` + `git diff` to confirm actual changes (subagent summary ≠ truth — verify).
-- Print compact summary: ticket id, files changed, subagent test/lint results, and what each review axis (Standards / Spec) flagged + what was fixed.
+- Translate the compact machine reports into a concise, normal-language summary: ticket id, files changed, subagent test/lint results, and what each review axis (Standards / Spec) flagged + what was fixed. Do not paste the protocols verbatim.
 - Explicitly state: "Awaiting code review. Reply `approve` to commit + continue, `reject` with feedback to revise, or `skip` to move on without commit."
 
 STOP HERE. Do not continue to next ticket. Do not auto-commit. Wait for user reply.
@@ -136,3 +140,5 @@ After the summary, hand the walkthrough to a subagent (skip if nothing was commi
 - `prompt`: invoke the `explain-code` skill (`Skill` tool, `skill: "explain-code"`) and follow its format exactly. Scope = the cumulative diff `BASE_SHA..HEAD`; include `BASE_SHA` and the commit list in the prompt so the scope is unambiguous. The finished post is the final message.
 
 Relay the subagent's post to the user verbatim — no summarizing, no rewriting.
+
+Do not apply compact reporting to this final walkthrough: `explain-code` is deliberately human-facing prose.
