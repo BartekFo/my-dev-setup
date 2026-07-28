@@ -9,7 +9,7 @@ alias ls="eza -lh --group-directories-first --icons=auto"
 alias lsa="ls -a"
 alias gcof="git cof"
 alias cd="zd"
-alias cx='claude --allow-dangerously-skip-permissions'
+alias cc='claude'
 alias c="opencode"
 zd() {
   if [[ $# -eq 0 ]]; then
@@ -26,9 +26,18 @@ alias t3="bunx t3"
 alias diff="hunk diff"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# fnm
+eval "$(fnm env --use-on-cd --shell zsh)"
+
+# FZF: fuzzy file and directory navigation with previews
+if (( $+commands[fzf] )); then
+  source <(fzf --zsh)
+  export FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+  export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+  export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:500 {}'"
+  export FZF_ALT_C_OPTS="--preview 'eza --tree --level=1 --icons --color=always {}'"
+fi
 
 export PATH="/Users/bartosz.f/Library/Python/3.9/bin:$PATH"
 source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
