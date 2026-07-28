@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Ship Tickets
 
-Serial, human-gated shipping of a ticket batch. The main thread **orchestrates only** — never writes code itself. Per ticket, one at a time (never parallel): implement (subagent driving the `implement` skill) → code review (`code-review` skill) + auto-fix → human gate → commit. On approve, optionally work through the slice with `teach-me-changes` first. After the batch, a subagent writes the walkthrough via the `explain-code` skill.
+Serial, human-gated shipping of a ticket batch. The main thread **orchestrates only** — never writes code itself. Tickets ship strictly one at a time: implement (subagent driving the `implement` skill) → code review (`code-review` skill) + auto-fix → human gate → commit. Serial applies to tickets; the review axes *inside* a ticket run concurrently. On approve, optionally work through the slice with `teach-me-changes` first. After the batch, a subagent writes the walkthrough via the `explain-code` skill.
 
 Machine-facing subagent reports use compact, Cavecrew-inspired protocols to protect the main context. Compression applies to wording, never evidence: retain changed paths, exact verification commands, acceptance-criterion results, finding locations, severity, sources, and fixes. Human-facing gates remain normal prose.
 
@@ -112,12 +112,14 @@ Reviewer feedback from previous attempt (treat as highest-priority constraints):
 
 #### 3b. Code review + auto-fix
 
-After the subagent returns, before surfacing to the user, review via the `code-review` skill. Four adaptations for this loop:
+After the subagent returns, before surfacing to the user, review by invoking the `code-review` skill (`Skill` tool, `skill: "code-review"`). Run it — do not hand-roll the axis dispatches from memory. Its step 4 spawns both axes from **one message carrying two `Agent` calls**, which is what makes them concurrent; two messages means two sequential reviews and double the wall clock.
+
+Five adaptations for this loop:
 
 - **Fixed point = `HEAD`.** The implement subagent did not commit, so the diff under review is the working tree: point the axis sub-agents at `git diff HEAD` plus untracked files — not `<fixed-point>...HEAD`. The non-empty check runs against that working-tree diff.
 - **Spec source = the ticket.** Pass `{body}` + acceptance criteria straight to the Spec sub-agent — skip the skill's commit-message / issue-tracker hunt.
 - **Model.** Both axis sub-agents get the `standard` tier.
-- **Depth follows the implementer's `mode:`.** `tdd` and `safety-net` get both axes. `no-test` (docs, config, formatting, lockfiles) gets Spec alone — that diff has no behaviour for Standards to judge.
+- **Depth follows the implementer's `mode:`.** `tdd` and `safety-net` get both axes. `no-test` (docs, config, formatting, lockfiles) gets Spec alone — that diff has no behaviour for Standards to judge. Settle the axis set before dispatching, so whichever axes run still leave together in one message.
 
 Then:
 
@@ -151,7 +153,7 @@ After `approve`, before committing, offer to work through what was just built �
 
 - If the batch `skip-all` flag is set, skip this step entirely.
 - Otherwise ask: "Work through this slice? `yes` / `no` / `skip-all`."
-  - **yes** → invoke the `teach-me-changes` skill, scope = this ticket (its diff, body, relevant PRD slice). When it returns, proceed to commit.
+  - **yes** → invoke the `teach-me-changes` skill (`Skill` tool, `skill: "teach-me-changes"`), scope = this ticket (its diff, body, relevant PRD slice). When it returns, proceed to commit.
   - **no** → proceed to commit.
   - **skip-all** → set the batch flag (no more teach prompts this run), proceed to commit.
 
