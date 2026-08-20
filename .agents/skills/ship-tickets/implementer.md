@@ -41,6 +41,11 @@ Edit hygiene (all modes):
 - Reuse existing utilities, hooks, services, components before writing new ones — grep first.
 - For frontend changes: check the project's component library before importing raw UI primitives.
 - No comments saying "what" — only "why" when non-obvious. No defensive code for impossible scenarios. No backwards-compat shims unless the ticket demands them.
+- Names are prose. One word per concept, one concept per word. Cut words the surrounding module already carries. Prefer the short physical word over the Latinate one (`prune`, not `reconcile`). A compound name is usually a hedge: `baseline` beats `lastObservedDiskContent`.
+- Don't pass or store a value you can compute from what is already in scope. Dropping derivable state shrinks signatures and control flow in one move.
+- Write for a reader who never saw this ticket. A name or comment that needs this conversation to make sense is overfitted.
+
+The full rules live in the `simplify` skill — read it if a naming or shape call is unclear. A review axis checks your diff against it after you return, so following it now saves a fix pass.
 
 **4. Verify locally.**
 - Run lint, typecheck, and the relevant test suite. If the project uses `pnpm` + `turbo`, prefer scoped commands (e.g. `pnpm --filter <pkg> test`) over full-repo runs.

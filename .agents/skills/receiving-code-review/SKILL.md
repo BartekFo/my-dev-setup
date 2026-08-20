@@ -1,6 +1,7 @@
 ---
 name: receiving-code-review
 description: Use when receiving code review feedback, before implementing any suggestion — each item gets a verdict (implement, push back, or clarify) backed by codebase evidence, not performative agreement.
+disable-model-invocation: true
 ---
 
 # Receiving Code Review

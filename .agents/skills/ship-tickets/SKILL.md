@@ -1,12 +1,12 @@
 ---
 name: ship-tickets
-description: Ship a batch of pre-written tickets serially — implementation via the `implement` skill and review via `code-review`, both executed by subagents on explicit model tiers, with a human gate before every commit.
+description: Ship a batch of pre-written tickets serially — implementation via the `implement` skill and review via `code-review` plus `simplify`, all executed by subagents on explicit model tiers, with a human gate before every commit.
 disable-model-invocation: true
 ---
 
 # Ship Tickets
 
-Serial, human-gated shipping of a ticket batch. The main thread **orchestrates only** — never writes code itself. Tickets ship strictly one at a time: implement (subagent driving the `implement` skill) → code review (`code-review` skill) + auto-fix → human gate → commit. Serial applies to tickets; the review axes *inside* a ticket run concurrently. On approve, optionally work through the slice with `teach-me-changes` first. After the batch, a subagent writes the walkthrough via the `explain-code` skill.
+Serial, human-gated shipping of a ticket batch. The main thread **orchestrates only** — never writes code itself. Tickets ship strictly one at a time: implement (subagent driving the `implement` skill) → review (`code-review` axes plus a `simplify` axis) + auto-fix → human gate → commit. Serial applies to tickets; the review axes *inside* a ticket run concurrently. On approve, optionally work through the slice with `teach-me-changes` first. After the batch, a subagent writes the walkthrough via the `explain-code` skill.
 
 Machine-facing subagent reports use compact, Cavecrew-inspired protocols to protect the main context. Compression applies to wording, never evidence: retain changed paths, exact verification commands, acceptance-criterion results, finding locations, severity, sources, and fixes. Human-facing gates remain normal prose.
 
@@ -30,10 +30,10 @@ Name **tiers**, never vendors, so this skill runs on any harness. Resolve each t
 | Tier | Class | Dispatched for |
 |---|---|---|
 | `fast` | cheapest usable coding model | the tweak applier (3g); the implementer on a `no-test` ticket |
-| `standard` | mid-tier workhorse | the implementer (default); both review axes; the walkthrough |
+| `standard` | mid-tier workhorse | the implementer (default); every review axis; the walkthrough |
 | `deep` | most capable available | the implementer when a ticket spans 3+ modules or turns on a design decision |
 
-`standard` is the floor for reviewers and for any implementer working from prose: a cheaper model takes more turns on the same diff and costs more end to end.
+`standard` is the floor for every review axis and for any implementer working from prose: a cheaper model takes more turns on the same diff and costs more end to end.
 
 The implementer's tier is a pre-dispatch guess from the ticket text. The subagent's own `mode:` classification arrives only in its report — use it for review depth (3b), not to second-guess the tier already spent.
 
@@ -110,22 +110,23 @@ Reviewer feedback from previous attempt (treat as highest-priority constraints):
 ---
 </subagent-prompt-template>
 
-#### 3b. Code review + auto-fix
+#### 3b. Review + auto-fix
 
-After the subagent returns, before surfacing to the user, review by invoking the `code-review` skill (`Skill` tool, `skill: "code-review"`). Run it — do not hand-roll the axis dispatches from memory. Its step 4 spawns both axes from **one message carrying two `Agent` calls**, which is what makes them concurrent; two messages means two sequential reviews and double the wall clock.
+After the subagent returns, before surfacing to the user, review by invoking the `code-review` skill (`Skill` tool, `skill: "code-review"`). Run it — do not hand-roll the axis dispatches from memory. Its step 4 spawns its axes from **one message carrying one `Agent` call each**, which is what makes them concurrent; the `simplify` axis below joins that same message. Split the calls across messages and the reviews run back to back for double the wall clock.
 
-Five adaptations for this loop:
+Six adaptations for this loop:
 
 - **Fixed point = `HEAD`.** The implement subagent did not commit, so the diff under review is the working tree: point the axis sub-agents at `git diff HEAD` plus untracked files — not `<fixed-point>...HEAD`. The non-empty check runs against that working-tree diff.
 - **Spec source = the ticket.** Pass `{body}` + acceptance criteria straight to the Spec sub-agent — skip the skill's commit-message / issue-tracker hunt.
-- **Model.** Both axis sub-agents get the `standard` tier.
-- **Depth follows the implementer's `mode:`.** `tdd` and `safety-net` get both axes. `no-test` (docs, config, formatting, lockfiles) gets Spec alone — that diff has no behaviour for Standards to judge. Settle the axis set before dispatching, so whichever axes run still leave together in one message.
+- **Model.** Every axis sub-agent gets the `standard` tier.
+- **Third axis: `simplify`.** Dispatch a general-purpose subagent alongside the `code-review` axes, in the same message, so all axes leave together. Its brief: invoke the `simplify` skill, scope = `git diff HEAD` plus untracked files, report findings in the same shape as the other axes, edit nothing. Hold it to prose and shape — names, comments, overfitting, derivable state. File splits and module boundaries belong to Standards; drop any finding Standards already raised.
+- **Depth follows the implementer's `mode:`.** `tdd` and `safety-net` get all three axes. `no-test` (docs, config, formatting, lockfiles) gets Spec and `simplify`, never Standards — that diff has no behaviour for Standards to judge, but its prose still counts. Settle the axis set before dispatching, so whichever axes run still leave together in one message.
 
 Then:
 
 1. Collect findings from the axes that ran.
    - **No findings** → skip straight to 3c.
-   - **Findings exist** → re-dispatch the implementer (same params as 3a) with the finding lines in the feedback slot; omit `No issues.` and `totals:` lines. Instruct it to apply the fixes (Spec gaps and hard Standards violations first; baseline smells are judgement calls), no commit, re-run lint/typecheck/tests.
+   - **Findings exist** → re-dispatch the implementer (same params as 3a) with the finding lines in the feedback slot; omit `No issues.` and `totals:` lines. Instruct it to apply the fixes in order — Spec gaps, then hard Standards violations, then `simplify` findings — no commit, re-run lint/typecheck/tests. Baseline smells and `simplify` findings are judgement calls, not orders. `simplify` goes last because a rename can break an acceptance criterion the earlier fixes just satisfied.
 2. One review + one fix pass is enough. Do not loop the review — the human gate in 3c catches anything left. (`reject` in 3d returns here, so re-reviews happen on demand.)
 3. Fixes are orchestrate-only too — the subagent applies them.
 
@@ -134,6 +135,7 @@ Then:
 After review + fixes:
 - Run `git status` + `git diff` to confirm actual changes (subagent summary ≠ truth — verify).
 - Translate the compact machine reports into a concise, normal-language summary: ticket id, files changed, subagent test/lint results, and what each review axis that ran flagged + what was fixed. Do not paste the protocols verbatim.
+- List the `simplify` findings under their own heading, applied and skipped alike. Renames, moved code, and deleted comments are taste, so the human needs one clear target for a `tweak` veto.
 - Explicitly state: "Awaiting code review. Reply `approve` to commit + continue, `tweak <one-sentence fix>` for a small correction, `reject <feedback>` to revise properly, `skip` to move on without commit, or `pause` to stop and resume later."
 
 STOP HERE. Do not continue to next ticket. Do not auto-commit. Wait for user reply.

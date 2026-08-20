@@ -78,10 +78,10 @@
       "sourceType": "github",
       "sourceUrl": "https://github.com/mattpocock/skills.git",
       "skillPath": "skills/productivity/handoff/SKILL.md",
-      "skillFolderHash": "3f7df8e717e41dfd6eacd03d47319a2e01248ffb",
+      "skillFolderHash": "184d485ae68a2132893a94239b2b85d253e6152b",
       "pluginName": "mattpocock-skills",
       "installedAt": "2026-05-12T09:56:41.127Z",
-      "updatedAt": "2026-07-08T16:15:24.803Z"
+      "updatedAt": "2026-08-11T22:35:51.593Z"
     },
     "improve-codebase-architecture": {
       "source": "mattpocock/skills",
@@ -355,6 +355,15 @@
       "skillFolderHash": "62b175240e2851f0b9be4f279737cbd74ed2e769",
       "installedAt": "2026-07-15T10:17:29.189Z",
       "updatedAt": "2026-07-15T10:17:29.189Z"
+    },
+    "show-me": {
+      "source": "humanlayer/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/humanlayer/skills.git",
+      "skillPath": "plugins/show-me/skills/show-me/SKILL.md",
+      "skillFolderHash": "a8eda6381157e27b067400b46cdf395da68b8670",
+      "installedAt": "2026-08-13T08:03:20.888Z",
+      "updatedAt": "2026-08-13T08:03:20.888Z"
     }
   },
   "dismissed": {
