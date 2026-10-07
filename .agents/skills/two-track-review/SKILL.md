@@ -39,6 +39,7 @@ Merge both tracks' findings into one numbered draft:
 - Dedupe overlapping findings; keep the sharper wording.
 - Convert each finding to a Conventional Comment (reference below). Map severity honestly: a real defect is `issue (blocking)`, an improvement is `suggestion (non-blocking)`, never inflate.
 - Anchor each comment to `path:line` where the line is part of the diff (head side). A finding on unchanged code goes to the review body instead; never invent an anchor.
+- When `/tmp/guided-review/<owner>-<repo>-<number>/guide.json` exists for the same head SHA, group the draft under its chapter titles in chapter order; numbering stays global.
 
 Present the full draft in chat, each entry as:
 
