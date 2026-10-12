@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -213,6 +214,36 @@ def check(guide: dict, files: list[FileDiff]) -> list[str]:
             errors.append(f"flow.edges: edge {e!r} must reference node ids")
         elif "label" in e and not isinstance(e["label"], str):
             errors.append(f"flow.edges: label of {e!r} must be a string")
+    if "tree" in guide:
+        errors += check_tree(guide["tree"], len(chapters))
+    return errors
+
+
+def check_tree(tree: list[dict], chapters: int, where: str = "tree") -> list[str]:
+    if not isinstance(tree, list) or not tree:
+        return [f"{where}: must be a non-empty list"]
+    errors: list[str] = []
+    for k, n in enumerate(tree):
+        at = f"{where}[{k}]"
+        if not isinstance(n, dict) or not isinstance(n.get("label"), str) or not n["label"]:
+            errors.append(f"{at}.label: must be a non-empty string")
+            continue
+        status = n.get("status", "unchanged")
+        if status not in STATUSES:
+            errors.append(f"{at}.status: must be one of {STATUSES}")
+        chapter = n.get("chapter")
+        if chapter is not None and (not isinstance(chapter, int) or not 1 <= chapter <= chapters):
+            errors.append(f"{at}.chapter: must be 1..{chapters} when present")
+        if status != "unchanged" and chapter is None:
+            errors.append(f"{at}: changed node needs a chapter")
+        for key in ("path", "detail"):
+            if key in n and not isinstance(n[key], str):
+                errors.append(f"{at}.{key}: must be a string when present")
+        for key in ("inputs", "outputs"):
+            if key in n and (not isinstance(n[key], list) or not all(isinstance(i, str) for i in n[key])):
+                errors.append(f"{at}.{key}: must be a list of strings when present")
+        if "children" in n:
+            errors += check_tree(n["children"], chapters, f"{at}.children")
     return errors
 
 
@@ -245,8 +276,9 @@ def inline(text: str) -> str:
 def render_flow(flow: dict) -> str:
     nodes = flow["nodes"]
     ids = [n["id"] for n in nodes]
+    edges = [e for e in flow["edges"] if e["from"] != e["to"]]
     succ: dict[str, list[str]] = {i: [] for i in ids}
-    for e in flow["edges"]:
+    for e in edges:
         succ[e["from"]].append(e["to"])
 
     state: dict[str, int] = {}
@@ -264,58 +296,131 @@ def render_flow(flow: dict) -> str:
     for i in ids:
         if i not in state:
             dfs(i)
+    # A cycle edge is laid out reversed, then drawn with its arrow at the start.
+    laid = [(e["to"], e["from"], e) if (e["from"], e["to"]) in back else (e["from"], e["to"], e) for e in edges]
 
     layer = {i: 0 for i in ids}
     for _ in ids:
-        for e in flow["edges"]:
-            if (e["from"], e["to"]) not in back:
-                layer[e["to"]] = max(layer[e["to"]], layer[e["from"]] + 1)
+        for a, b, _ in laid:
+            layer[b] = max(layer[b], layer[a] + 1)
 
-    char_w, node_h, row_h, gap, pad, loop = 7.8, 34, 72, 28, 12, 70
+    char_w, node_h, row_h, gap, pad = 7.8, 34, 104, 32, 16
     width: dict[str, float] = {}
     for n in nodes:
-        text = STATUS_PREFIX[n["status"]] + n["label"]
-        width[n["id"]] = len(text) * char_w + 28 + (30 if n.get("chapter") else 0)
+        width[n["id"]] = len(STATUS_PREFIX[n["status"]] + n["label"]) * char_w + 28 + (30 if n.get("chapter") else 0)
+
+    # Long edges pass through zero-width dummy nodes, one per skipped layer, so they route between real nodes.
     rows: dict[int, list[str]] = {}
     for i in ids:
         rows.setdefault(layer[i], []).append(i)
-    row_w = {l: sum(width[i] for i in r) + gap * (len(r) - 1) for l, r in rows.items()}
-    max_w = max(row_w.values())
-    pos: dict[str, tuple[float, float]] = {}
-    for l, r in rows.items():
-        x = pad + loop + (max_w - row_w[l]) / 2
-        for i in r:
-            pos[i] = (x, pad + l * row_h)
-            x += width[i] + gap
-    svg_w = pad * 2 + max_w + loop * 2
-    svg_h = pad * 2 + (max(rows) + 1) * row_h - (row_h - node_h)
+    up: dict[str, list[str]] = {i: [] for i in ids}
+    down: dict[str, list[str]] = {i: [] for i in ids}
+    chains: list[tuple[dict, list[str]]] = []
+    for k, (start, end, e) in enumerate(laid):
+        chain = [start]
+        for l in range(layer[start] + 1, layer[end]):
+            d = f"\0{k}:{l}"
+            width[d] = 0
+            up[d], down[d] = [], []
+            rows[l].append(d)
+            chain.append(d)
+        chain.append(end)
+        for a, b in zip(chain, chain[1:]):
+            down[a].append(b)
+            up[b].append(a)
+        chains.append((e, chain))
 
-    parts = []
-    for e in flow["edges"]:
-        u, v = e["from"], e["to"]
-        if layer[v] - layer[u] > 1:
-            x1, y1 = pos[u][0], pos[u][1] + node_h / 2
-            x2, y2 = pos[v][0], pos[v][1] + node_h / 2
-            bend = min(x1, x2) - loop + 10
-            d = f"M{x1:.0f},{y1:.0f} C{bend:.0f},{y1:.0f} {bend:.0f},{y2:.0f} {x2:.0f},{y2:.0f}"
-            lx, ly, anchor = bend + 4, (y1 + y2) / 2 + 4, "start"
-        elif layer[v] > layer[u]:
-            x1, y1 = pos[u][0] + width[u] / 2, pos[u][1] + node_h
-            x2, y2 = pos[v][0] + width[v] / 2, pos[v][1]
-            d = f"M{x1:.0f},{y1:.0f} C{x1:.0f},{y1 + 24:.0f} {x2:.0f},{y2 - 24:.0f} {x2:.0f},{y2:.0f}"
-            lx, ly, anchor = (x1 + x2) / 2 + 6, (y1 + y2) / 2 + 4, "start"
-        else:
-            x1, y1 = pos[u][0] + width[u], pos[u][1] + node_h / 2
-            x2, y2 = pos[v][0] + width[v], pos[v][1] + node_h / 2
-            bend = max(x1, x2) + loop - 10
-            d = f"M{x1:.0f},{y1:.0f} C{bend:.0f},{y1:.0f} {bend:.0f},{y2:.0f} {x2:.0f},{y2:.0f}"
-            lx, ly, anchor = bend - 4, (y1 + y2) / 2 + 4, "end"
-        parts.append(f'<path class="edge" d="{d}" marker-end="url(#arrow)"/>')
-        if e.get("label"):
-            parts.append(f'<text class="edge-label" x="{lx:.0f}" y="{ly:.0f}" text-anchor="{anchor}">{esc(e["label"])}</text>')
+    levels = sorted(rows)
+    for _ in range(12):
+        for seq, nbrs in ((levels[1:], up), (levels[-2::-1], down)):
+            for l in seq:
+                index = {v: j for r in rows.values() for j, v in enumerate(r)}
+                rows[l].sort(key=lambda v: sum(index[w] for w in nbrs[v]) / len(nbrs[v]) if nbrs[v] else index[v])
+
+    def spacing(a: str, b: str) -> float:
+        return gap if width[a] and width[b] else gap / 2
+
+    x: dict[str, float] = {}
+    for l in levels:
+        cur = 0.0
+        for j, v in enumerate(rows[l]):
+            if j:
+                cur += spacing(rows[l][j - 1], v)
+            x[v] = cur
+            cur += width[v]
+
+    def centre(v: str) -> float:
+        return x[v] + width[v] / 2
+
+    for _ in range(8):
+        for seq, nbrs in ((levels[1:], up), (levels[-2::-1], down)):
+            for l in seq:
+                r = rows[l]
+                want = [sum(centre(w) for w in nbrs[v]) / len(nbrs[v]) - width[v] / 2 if nbrs[v] else x[v] for v in r]
+                left, right = want[:], want[:]
+                for j in range(1, len(r)):
+                    left[j] = max(want[j], left[j - 1] + width[r[j - 1]] + spacing(r[j - 1], r[j]))
+                for j in range(len(r) - 2, -1, -1):
+                    right[j] = min(want[j], right[j + 1] - width[r[j]] - spacing(r[j], r[j + 1]))
+                for j, v in enumerate(r):
+                    x[v] = (left[j] + right[j]) / 2
+
+    shift = pad - min(x.values())
+    for v in x:
+        x[v] += shift
+    top = {l: pad + 18 + j * row_h for j, l in enumerate(levels)}
+    y = {v: top[l] for l in levels for v in rows[l]}
+    right_edge = max(x[v] + width[v] for v in x)
+
+    def ports(group: dict[str, list[str]]) -> dict[tuple[str, str], float]:
+        out: dict[tuple[str, str], float] = {}
+        for v, others in group.items():
+            for k, w in enumerate(sorted(others, key=centre), 1):
+                out[(v, w)] = x[v] + width[v] * k / (len(others) + 1) if width[v] else x[v]
+        return out
+
+    out_port, in_port = ports(down), ports(up)
+
+    def bezier(p0: float, p1: float, p2: float, p3: float, t: float) -> float:
+        s = 1 - t
+        return s**3 * p0 + 3 * s * s * t * p1 + 3 * s * t * t * p2 + t**3 * p3
+
+    boxes = [(x[v], y[v], x[v] + width[v], y[v] + node_h) for v in ids]
+
+    def free(box: tuple[float, float, float, float]) -> bool:
+        return all(box[2] < b[0] or box[0] > b[2] or box[3] < b[1] or box[1] > b[3] for b in boxes)
+
+    parts, labels = [], []
+    for e, chain in chains:
+        d, segments = "", []
+        for a, b in zip(chain, chain[1:]):
+            x1, y1 = out_port[(a, b)], y[a] + node_h
+            x2, y2 = in_port[(b, a)], y[b]
+            d += f"M{x1:.1f},{y1:.1f}" if not d else f" L{x1:.1f},{y1:.1f}"
+            bend = (y2 - y1) / 2
+            d += f" C{x1:.1f},{y1 + bend:.1f} {x2:.1f},{y2 - bend:.1f} {x2:.1f},{y2:.1f}"
+            segments.append((x1, y1, x2, y2, bend))
+        reverse = chain[0] != e["from"]
+        arrow = 'class="edge back" marker-start="url(#arrow)"' if reverse else 'class="edge" marker-end="url(#arrow)"'
+        parts.append(f'<path {arrow} d="{d}"/>')
+        if not e.get("label"):
+            continue
+        half = len(e["label"]) * 3.4 + 3
+        fan_in = len(up[chain[-1]]) > len(down[chain[0]])
+        order = segments if fan_in else segments[::-1]
+        ts = (0.3, 0.45, 0.2, 0.6, 0.75) if fan_in else (0.7, 0.55, 0.8, 0.4, 0.25)
+        spots = [
+            (bezier(x1, x1, x2, x2, t), bezier(y1, y1 + bend, y2 - bend, y2, t))
+            for x1, y1, x2, y2, bend in order for t in ts
+        ]
+        lx, ly = next((p for p in spots if free((p[0] - half, p[1] - 8, p[0] + half, p[1] + 6))), spots[0])
+        boxes.append((lx - half, ly - 8, lx + half, ly + 6))
+        labels.append(f'<text class="edge-label" x="{lx:.0f}" y="{ly + 4:.0f}" text-anchor="middle">{esc(e["label"])}</text>')
+    svg_w = right_edge + pad
+    svg_h = max(y.values()) + node_h + pad
+
     for n in nodes:
-        nx, ny = pos[n["id"]]
-        w = width[n["id"]]
+        nx, ny, w = x[n["id"]], y[n["id"]], width[n["id"]]
         text = esc(STATUS_PREFIX[n["status"]] + n["label"])
         parts.append(f'<g class="node {n["status"]}"><rect x="{nx:.0f}" y="{ny:.0f}" width="{w:.0f}" height="{node_h}" rx="6"/>')
         parts.append(f'<text x="{nx + 14:.0f}" y="{ny + 22:.0f}">{text}</text>')
@@ -326,10 +431,53 @@ def render_flow(flow: dict) -> str:
             )
         parts.append("</g>")
     marker = (
-        '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">'
+        '<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
         '<path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs>'
     )
-    return f'<svg width="{svg_w:.0f}" height="{svg_h:.0f}" viewBox="0 0 {svg_w:.0f} {svg_h:.0f}">{marker}{"".join(parts)}</svg>'
+    body = "".join(parts) + "".join(labels)
+    return f'<svg width="{svg_w:.0f}" height="{svg_h:.0f}" viewBox="0 0 {svg_w:.0f} {svg_h:.0f}">{marker}{body}</svg>'
+
+
+def render_tree(tree: list[dict], anchors: dict[str, str]) -> str:
+    statuses: set[str] = set()
+
+    def collect(ns: list[dict]) -> None:
+        for n in ns:
+            statuses.add(n.get("status", "unchanged"))
+            collect(n.get("children", []))
+
+    collect(tree)
+    rows: list[str] = []
+
+    def walk(ns: list[dict], rails: list[bool]) -> None:
+        for k, n in enumerate(ns):
+            last = k == len(ns) - 1
+            depth = len(rails)
+            guides = "".join(f'<i class="rail" style="left:{12 + (i - 1) * 24}px"></i>' for i in range(1, depth) if rails[i])
+            if depth:
+                guides += f'<i class="elbow{" last" if last else ""}" style="left:{12 + (depth - 1) * 24}px"></i>'
+            status = n.get("status", "unchanged")
+            mark = f'<span class="{status}">{STATUS_PREFIX[status]}</span>' if len(statuses) > 1 else ""
+            name = esc(n["label"])
+            path = n.get("path", "")
+            if path in anchors:
+                name = f'<a href="#{anchors[path]}">{name}</a>'
+            title = f' title="{esc(path)}"' if path else ""
+            detail = f'<div class="tdetail">{inline(n["detail"])}</div>' if n.get("detail") else ""
+            badge = f'<a class="tbadge" href="#ch-{n["chapter"]}">{n["chapter"]:02d}</a>' if n.get("chapter") else ""
+            rows.append(
+                f'<tr class="d{depth}"><td class="tname" style="padding-left:{14 + depth * 24}px">{guides}'
+                f'<span class="tlabel"{title}>{mark}{name}</span>{detail}</td>'
+                f'<td class="tio">{esc(", ".join(n.get("inputs", [])))}</td>'
+                f'<td class="tio">{esc(", ".join(n.get("outputs", [])))}</td><td class="tch">{badge}</td></tr>'
+            )
+            walk(n.get("children", []), rails + [not last])
+
+    walk(tree, [])
+    return (
+        '<table class="tree"><thead><tr><th>Component</th><th>Inputs</th><th>Outputs</th><th>Ch.</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody></table>'
+    )
 
 
 def render_hunks(f: FileDiff, indices: list[int]) -> str:
@@ -348,12 +496,29 @@ def render_hunks(f: FileDiff, indices: list[int]) -> str:
     return f'<table class="diff">{"".join(rows)}</table>'
 
 
+def file_anchor(chapter: int, path: str) -> str:
+    return f"ch-{chapter}-{re.sub(r'[^A-Za-z0-9]+', '-', path)}"
+
+
 def render_page(pr: dict, files: list[FileDiff], guide: dict) -> str:
     by_path = {f.path: f for f in files}
+    prefix = os.path.commonpath([os.path.dirname(f.path) for f in files]) if len(files) > 1 else ""
+    prefix = f"{prefix}/" if prefix else ""
     total = len(guide["chapters"])
     key_base = f'{pr.get("url", "")}@{pr.get("headRefOid", "")}'
     toc = "".join(
         f'<li><a href="#ch-{ci}">{ci:02d} · {inline(ch["title"])}</a></li>' for ci, ch in enumerate(guide["chapters"], 1)
+    )
+    jump = "".join(
+        f'<option value="{ci}">{ci:02d} · {esc(ch["title"])}</option>' for ci, ch in enumerate(guide["chapters"], 1)
+    )
+    anchors: dict[str, str] = {}
+    for ci, ch in enumerate(guide["chapters"], 1):
+        for entry in ch["files"]:
+            anchors.setdefault(entry["path"], file_anchor(ci, entry["path"]))
+    tree = (
+        f'<div class="card"><div class="card-title">Component tree</div>{render_tree(guide["tree"], anchors)}</div>'
+        if guide.get("tree") else ""
     )
     steps = "".join(f"<li>{inline(s)}</li>" for s in guide["steps"])
     flow_title = inline(guide["flow"].get("title", ""))
@@ -365,9 +530,9 @@ def render_page(pr: dict, files: list[FileDiff], guide: dict) -> str:
             f = by_path[entry["path"]]
             indices = entry.get("hunks") or list(range(1, len(f.hunks) + 1))
             split = f" · hunks {', '.join(map(str, indices))} of {len(f.hunks)}" if entry.get("hunks") else ""
-            anchor = f"ch-{ci}-{re.sub(r'[^A-Za-z0-9]+', '-', f.path)}"
+            anchor = file_anchor(ci, f.path)
             stats = f'<span class="add">+{f.count("add")}</span> <span class="del">-{f.count("del")}</span>'
-            file_list.append(f'<li><a href="#{anchor}">{esc(f.path)}</a><span>{stats}</span></li>')
+            file_list.append(f'<li><a href="#{anchor}" title="{esc(f.path)}">{esc(f.path.removeprefix(prefix))}</a><span>{stats}</span></li>')
             if f.binary:
                 body = '<p class="muted">Binary file.</p>'
             elif not f.hunks:
@@ -403,13 +568,14 @@ def render_page(pr: dict, files: list[FileDiff], guide: dict) -> str:
 <div class="muted">{esc(author)} · <a href="{esc(pr.get("url", ""))}">#{pr.get("number", "")}</a> · {sha} ·
 <span class="add">+{pr.get("additions", 0)}</span> <span class="del">-{pr.get("deletions", 0)}</span> ·
 <span id="progress">0</span> / {total} chapters reviewed</div></header>
-<section class="overview"><div class="side"><h2>Overview</h2>{prose(guide["overview"])}<ol>{steps}</ol>
+<section class="overview" id="overview"><div class="intro"><h2>Overview</h2>{prose(guide["overview"])}<ol>{steps}</ol>
 <h3>Chapters</h3><ol class="toc">{toc}</ol></div>
 <div class="main"><div class="card"><div class="card-title">Before / after</div><div class="muted">{flow_title}</div>
 <div class="flow">{render_flow(guide["flow"])}</div>
 <div class="legend"><span class="lg added">+ added</span><span class="lg changed">~ changed</span>
-<span class="lg removed">− removed</span><span class="lg unchanged">unchanged</span></div></div></div></section>
+<span class="lg removed">− removed</span><span class="lg unchanged">unchanged</span></div></div>{tree}</div></section>
 {"".join(chapters_html)}
+<nav class="jump"><button id="prev" title="Previous chapter (k)">‹</button><span class="pick"><select id="jump"><option value="0">Overview</option>{jump}</select></span><button id="next" title="Next chapter (j)">›</button></nav>
 <script>{JS}</script></body></html>"""
 
 
@@ -424,18 +590,19 @@ a{color:inherit}h1{font-size:24px;margin:0 0 4px}h2{font-size:19px;margin:0 0 6p
 code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 4px;border-radius:4px}
 .muted{color:var(--muted)}.add{color:var(--add)}.del{color:var(--del)}
 header{margin-bottom:28px}
-section{display:grid;grid-template-columns:minmax(260px,380px) minmax(0,1fr);gap:36px;padding:28px 0;border-top:1px solid var(--border)}
-.side{position:sticky;top:16px;align-self:start}.main{min-width:0}
+section.overview{display:block}.intro{max-width:80ch;margin-bottom:24px}
+section{display:grid;grid-template-columns:minmax(320px,60ch) minmax(0,1fr);gap:48px;padding:28px 0;border-top:1px solid var(--border)}
+.side{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow-y:auto;padding-right:8px;line-height:1.7}.side p{margin:0 0 14px}.side code{font-size:12.5px;padding:0 3px}.side h2{line-height:1.3;margin-bottom:10px}.main{min-width:0}
 .counter{color:var(--muted);font-size:13px;margin-bottom:10px;display:flex;gap:14px}
-.note{border-left:3px solid var(--chg);padding:2px 12px;margin:10px 0;background:var(--chg-bg);border-radius:0 6px 6px 0}
-ul.files{list-style:none;padding:0;font-size:13px}ul.files li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
-ul.files a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none}
+.note{border-left:3px solid var(--chg);padding:10px 14px 0;margin:16px 0;background:var(--chg-bg);border-radius:0 6px 6px 0}
+ul.files{list-style:none;padding:0;margin:18px 0 0;font-size:13px;line-height:1.45}ul.files li{display:flex;justify-content:space-between;gap:12px;padding:4px 0;border-top:1px solid var(--border)}ul.files li>span{white-space:nowrap}
+ul.files a{overflow-wrap:anywhere;text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
 .toc{list-style:none;padding:0}.toc a{text-decoration:none}.toc li.done a{color:var(--muted);text-decoration:line-through}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}.card-title{font-weight:600}
-.flow{overflow-x:auto;margin-top:10px}
+.flow{overflow-x:auto;margin-top:10px}.flow svg{max-width:100%;height:auto}
 .flow text{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;fill:var(--fg)}
-.flow .edge{fill:none;stroke:var(--muted);stroke-width:1.2}.flow .arrowhead{fill:var(--muted)}
-.flow .edge-label{fill:var(--muted);font-size:11px}.flow .badge{fill:var(--muted);font-size:11px;text-decoration:underline}
+.flow .edge{fill:none;stroke:var(--muted);stroke-width:1.2;opacity:.75}.flow .edge.back{stroke-dasharray:5 4}.flow .arrowhead{fill:var(--muted)}
+.flow .edge-label{fill:var(--muted);font-size:11px;paint-order:stroke;stroke:var(--card);stroke-width:5px;stroke-linejoin:round}.flow .badge{fill:var(--muted);font-size:11px;text-decoration:underline}
 .node rect{fill:var(--card);stroke:var(--border)}.node.added rect{fill:var(--add-bg);stroke:var(--add)}
 .node.changed rect{fill:var(--chg-bg);stroke:var(--chg)}.node.removed rect{fill:var(--del-bg);stroke:var(--del);stroke-dasharray:4 3}
 .node.removed text:not(.badge){text-decoration:line-through}
@@ -449,6 +616,32 @@ table.diff{border-collapse:collapse;width:100%;font:12.5px/1.5 ui-monospace,SFMo
 table.diff td{padding:0 8px;vertical-align:top}td.ln{color:var(--muted);text-align:right;width:1%;user-select:none}
 td.sign{width:1%;user-select:none}td.code{white-space:pre-wrap;overflow-wrap:anywhere}
 tr.add{background:var(--add-bg)}tr.del{background:var(--del-bg)}tr.hunk td{background:var(--hunk);color:var(--muted);padding:3px 8px}
+nav.jump{position:fixed;bottom:20px;right:20px;z-index:10;display:flex;align-items:center;gap:2px;padding:4px;
+border-radius:999px;border:1px solid var(--border);background:color-mix(in srgb,var(--card) 80%,transparent);
+backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 28px rgba(0,0,0,.18)}
+nav.jump button,nav.jump select{font:500 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--fg);
+background:transparent;border:0;cursor:pointer;outline:none}
+nav.jump button{width:30px;height:30px;border-radius:50%;font-size:17px;line-height:1;color:var(--muted)}
+nav.jump button:hover,nav.jump .pick:hover{background:var(--code);color:var(--fg)}
+nav.jump .pick{position:relative;border-radius:999px}
+nav.jump .pick::after{content:"";position:absolute;right:12px;top:50%;width:6px;height:6px;margin-top:-5px;
+border:solid var(--muted);border-width:0 1.5px 1.5px 0;transform:rotate(45deg);pointer-events:none}
+nav.jump select{appearance:none;-webkit-appearance:none;max-width:44ch;padding:6px 30px 6px 12px;text-overflow:ellipsis}
+nav.jump :focus-visible{box-shadow:0 0 0 2px var(--muted)}
+.main>.card+.card{margin-top:20px}
+table.tree{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+.tree th{text-align:left;font-weight:500;color:var(--muted);font-size:12px;padding:6px 12px;border-bottom:1px solid var(--border)}
+.tree td{padding:7px 12px;vertical-align:top}
+.tree tbody tr:hover{background:var(--code)}.tree tr.d0 td{background:var(--hunk)}
+.tree td.tname{position:relative;min-width:300px}
+.tree .rail,.tree .elbow{position:absolute;top:0;bottom:0;width:12px;border-left:1.5px solid var(--muted);opacity:.8}
+.tree .elbow::after{content:"";position:absolute;left:0;top:16px;width:10px;
+border-top:1.5px solid var(--muted)}.tree .elbow.last{bottom:auto;height:17px}
+.tlabel{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}.tlabel a{text-decoration:none}
+.tlabel a:hover{text-decoration:underline}.tree tr.d0 .tlabel,.tree tr.d1 .tlabel{font-weight:600}
+.tdetail{color:var(--muted);font-size:12.5px;margin-top:2px;max-width:70ch}.tdetail code{background:none;padding:0;font-size:12px}
+.tio{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.tch{width:1%;text-align:right}.tbadge{color:var(--muted);font-size:12px}
 @media (max-width:900px){body{padding:20px}section{grid-template-columns:1fr}.side{position:static}}
 """
 
@@ -463,6 +656,15 @@ if(c.checked&&c.classList.contains('file-rv'))c.closest('details').open=false;
 c.addEventListener('change',()=>{store.set(c.dataset.key,c.checked);
 if(c.classList.contains('file-rv')&&c.checked)c.closest('details').open=false;refresh()})});
 refresh();
+const secs=[...document.querySelectorAll('section.overview,section.chapter')],jump=document.getElementById('jump');
+function current(){let i=0;secs.forEach((s,j)=>{if(s.getBoundingClientRect().top<=80)i=j});return i}
+function go(i){const s=secs[Math.max(0,Math.min(secs.length-1,i))];s.scrollIntoView();history.replaceState(null,'','#'+s.id)}
+jump.addEventListener('change',()=>go(+jump.value));
+document.getElementById('prev').addEventListener('click',()=>go(current()-1));
+document.getElementById('next').addEventListener('click',()=>go(current()+1));
+addEventListener('scroll',()=>{jump.value=current()},{passive:true});
+addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||e.target.closest?.('input,select,textarea'))return;
+if(e.key==='j')go(current()+1);if(e.key==='k')go(current()-1)});
 """
 
 

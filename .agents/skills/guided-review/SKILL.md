@@ -36,7 +36,7 @@ Done when: `python3 {SKILL_DIR}/render.py check $DIR` exits 0 when you run it yo
 python3 {SKILL_DIR}/render.py render $DIR && open $DIR/guide.html
 ```
 
-The page keeps per-chapter and per-file "Reviewed" checkboxes in the browser, keyed to the head SHA. Report the overview sentence, the numbered chapter titles, and the file path.
+The page keeps per-chapter and per-file "Reviewed" checkboxes in the browser, keyed to the head SHA, and a fixed bar that jumps between chapters (`j`/`k`). Report the overview sentence, the numbered chapter titles, and the file path.
 
 Done when: the page is open in the browser.
 

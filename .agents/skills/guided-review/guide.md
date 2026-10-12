@@ -30,6 +30,11 @@ change. Leave the repository untouched; the only file you write is
     ],
     "edges": [{"from": "main", "to": "take", "label": "optional"}]
   },
+  "tree": [
+    {"label": "ShareScreen", "path": "src/share/ShareScreen.tsx", "status": "added", "chapter": 2,
+     "inputs": ["threadId"], "outputs": ["sent"],
+     "detail": "Optional, one line: state it owns, when it mounts.", "children": []}
+  ],
   "chapters": [
     {
       "title": "Stage and upload shared files",
@@ -51,6 +56,10 @@ change. Leave the repository untouched; the only file you write is
   unchanged neighbours a reader needs for orientation. Removed nodes stay with
   status "removed", so the diagram shows before and after at once. At most 12
   nodes. Every non-unchanged node names the chapter that holds its change.
+- tree: optional. Add it when the PR adds or reshapes a component, module or
+  class hierarchy. Nest by real ownership (parent renders or creates child).
+  status defaults to "unchanged"; every other status names its chapter.
+  path is the full repo path from the diff, so the name links to its diff.
 - chapters: one idea each, in reading order: the core behaviour change first,
   then its callers and integration points, then configuration and
   infrastructure, then database and migrations, then tests, then generated
